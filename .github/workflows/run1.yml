@@ -1,4 +1,4 @@
-name: "um2"
+name: "sm2m-v2"
 
 on:
   workflow_dispatch:
@@ -11,10 +11,15 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - '1'
-          - '1b'
-          - 'LDP'
-          - 'LDP2'
+          - '71'
+          - '71b'
+          - '72'
+          - '73'
+          - '74'
+          - '75'
+          - '76'
+          - '77'
+          - '78'
 
     steps:
     # ============================================================
@@ -212,6 +217,8 @@ root_folder_id = {clean_id}
     # RUN BOTS IN PARALLEL
     # ============================================================
     - name: Run All Subfolder Bots
+      env:
+        TARGET_MATRIX: ${{ matrix.target }}
       run: |
         python3 <<'PYTHON'
         import os
@@ -219,7 +226,7 @@ root_folder_id = {clean_id}
         import sys
         import time
 
-        target = "${{ matrix.target }}"
+        target = os.environ.get("TARGET_MATRIX", "")
         target_dir = os.path.join("./drive_sf", target)
 
         print("=" * 60)
