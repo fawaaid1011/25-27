@@ -1,4 +1,4 @@
-name: "sm2m-v2"
+name: "um2"
 
 on:
   workflow_dispatch:
@@ -11,15 +11,10 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - '71'
-          - '71b'
-          - '72'
-          - '73'
-          - '74'
-          - '75'
-          - '76'
-          - '77'
-          - '78'
+          - '1'
+          - '1b'
+          - 'LDP'
+          - 'LDP2'
 
     steps:
     # ============================================================
@@ -224,32 +219,23 @@ root_folder_id = {clean_id}
         import os
         import subprocess
         import sys
-        import time
 
         target = os.environ.get("TARGET_MATRIX", "")
         target_dir = os.path.join("./drive_sf", target)
 
         print("=" * 60)
-        print(f"TARGET MATRIX : {target}")
-        print(f"TARGET FOLDER : {target_dir}")
+        print("TARGET MATRIX :", target)
+        print("TARGET FOLDER :", target_dir)
         print("=" * 60)
 
         if not os.path.exists(target_dir):
-            print(f"[!] ERROR: Folder {target_dir} tidak ditemukan di Google Drive!")
+            print("[!] ERROR: Folder %s tidak ditemukan di Google Drive!" % target_dir)
             sys.exit(1)
 
         processes = []
 
         def run_bot_loop(bot_dir):
-            cmd = (
-                "while true; do "
-                "python3 sm.py; "
-                "EXIT_CODE=$?; "
-                f'echo "[!] Bot di {bot_dir} berhenti dengan code $EXIT_CODE"; '
-                'echo "[!] Restart dalam 5 detik..."; '
-                "sleep 5; "
-                "done"
-            )
+            cmd = "while true; do python3 sm.py; echo '[!] Bot berhenti, restart 5s...'; sleep 5; done"
             return subprocess.Popen(
                 cmd,
                 shell=True,
@@ -260,14 +246,14 @@ root_folder_id = {clean_id}
 
         for root, dirs, files in os.walk(target_dir):
             if "sm.py" in files:
-                print(f"==> Menjalankan Bot di: {root}")
+                print("==> Menjalankan Bot di:", root)
                 processes.append(run_bot_loop(root))
 
         if not processes:
-            print(f"[!] ERROR: Tidak ditemukan sm.py di dalam {target_dir}")
+            print("[!] ERROR: Tidak ditemukan sm.py di dalam %s" % target_dir)
             sys.exit(1)
 
-        print(f"\n[+] Total bot berjalan: {len(processes)}\n")
+        print("\n[+] Total bot berjalan:", len(processes), "\n")
 
         try:
             for p in processes:
