@@ -24,810 +24,810 @@ jobs:
           - 'LDP2'
     steps:
 
-    # ============================================================
-    # CHECKOUT
-    # ============================================================
+      # ============================================================
+      # CHECKOUT
+      # ============================================================
 
-    - name: Checkout Repository
+      - name: Checkout Repository
 
-      uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
-    # ============================================================
-    # PYTHON
-    # ============================================================
+      # ============================================================
+      # PYTHON
+      # ============================================================
 
-    - name: Set up Python
+      - name: Set up Python
 
-      uses: actions/setup-python@v5
+        uses: actions/setup-python@v5
 
-      with:
+        with:
 
-        python-version: '3.10'
+          python-version: '3.10'
 
-    # ============================================================
-    # INSTALL SYSTEM PACKAGES
-    # ============================================================
+      # ============================================================
+      # INSTALL SYSTEM PACKAGES
+      # ============================================================
 
-    - name: Install Google Chrome & Rclone System
+      - name: Install Google Chrome & Rclone System
 
-      run: |
+        run: |
 
-        set -e
+          set -e
 
-        sudo apt-get update
-
-        sudo apt-get install -y \
-          wget \
-          curl \
-          rclone \
-          fuse3
-
-        # ======================================================
-        # CEK GOOGLE CHROME
-        # ======================================================
-
-        if ! command -v google-chrome >/dev/null 2>&1; then
-
-          echo ""
-          echo "Chrome belum tersedia."
-          echo "Install Google Chrome..."
-          echo ""
-
-          wget -q \
-            https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get update
 
           sudo apt-get install -y \
-            ./google-chrome-stable_current_amd64.deb
+            wget \
+            curl \
+            rclone \
+            fuse3
 
-        fi
+          # ======================================================
+          # CEK GOOGLE CHROME
+          # ======================================================
 
-        # ======================================================
-        # HAPUS CHROMEDRIVER BAWAAN
-        # ======================================================
+          if ! command -v google-chrome >/dev/null 2>&1; then
 
-        sudo rm -f /usr/bin/chromedriver
+            echo ""
+            echo "Chrome belum tersedia."
+            echo "Install Google Chrome..."
+            echo ""
 
-        # ======================================================
-        # INFORMASI
-        # ======================================================
+            wget -q \
+              https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 
-        echo ""
-        echo "========================================"
-        echo "Chrome:"
-        echo "========================================"
+            sudo apt-get install -y \
+              ./google-chrome-stable_current_amd64.deb
 
-        google-chrome --version || true
+          fi
 
-        echo ""
-        echo "========================================"
-        echo "Rclone:"
-        echo "========================================"
+          # ======================================================
+          # HAPUS CHROMEDRIVER BAWAAN
+          # ======================================================
 
-        rclone version
+          sudo rm -f /usr/bin/chromedriver
 
-        echo ""
-        echo "========================================"
+          # ======================================================
+          # INFORMASI
+          # ======================================================
 
-    # ============================================================
-    # PYTHON PACKAGES
-    # ============================================================
+          echo ""
+          echo "========================================"
+          echo "Chrome:"
+          echo "========================================"
 
-    - name: Install Python Packages
+          google-chrome --version || true
 
-      run: |
+          echo ""
+          echo "========================================"
+          echo "Rclone:"
+          echo "========================================"
 
-        set -e
+          rclone version
 
-        python -m pip install --upgrade pip
+          echo ""
+          echo "========================================"
 
-        pip install \
-          requests \
-          selenium \
-          selenium-stealth \
-          colorama \
-          certifi \
-          urllib3
+      # ============================================================
+      # PYTHON PACKAGES
+      # ============================================================
 
-    # ============================================================
-    # SETUP RCLONE GOOGLE DRIVE
-    # ============================================================
+      - name: Install Python Packages
 
-    - name: Setup Rclone Google Drive
+        run: |
 
-      env:
+          set -e
 
-        RAW_GCP_KEY: ${{ secrets.GCP_SA_KEY }}
+          python -m pip install --upgrade pip
 
-        RAW_DRIVE_ID: ${{ secrets.DRIVE_FILE_ID }}
+          pip install \
+            requests \
+            selenium \
+            selenium-stealth \
+            colorama \
+            certifi \
+            urllib3
 
-      run: |
+      # ============================================================
+      # SETUP RCLONE GOOGLE DRIVE
+      # ============================================================
 
-        set -e
+      - name: Setup Rclone Google Drive
 
-        # ======================================================
-        # BUAT CONFIG DIRECTORY
-        # ======================================================
+        env:
 
-        mkdir -p /home/runner/.config/rclone
+          RAW_GCP_KEY: ${{ secrets.GCP_SA_KEY }}
 
-        echo ""
-        echo "========================================"
-        echo "Membuat Service Account JSON..."
-        echo "========================================"
+          RAW_DRIVE_ID: ${{ secrets.DRIVE_FILE_ID }}
 
-        # ======================================================
-        # BASE64 SERVICE ACCOUNT
-        # ======================================================
-        #
-        # Dipakai agar isi secret tetap utuh.
-        #
-        # ======================================================
+        run: |
 
-        printf '%s' "$RAW_GCP_KEY" \
-          | base64 -w 0 \
-          > /tmp/sa_b64.txt
+          set -e
 
-        python3 <<'PYTHON'
+          # ======================================================
+          # BUAT CONFIG DIRECTORY
+          # ======================================================
 
-        import base64
-        import json
-        import os
-        import re
-        import sys
+          mkdir -p /home/runner/.config/rclone
 
-        # ============================================================
-        # READ SERVICE ACCOUNT SECRET
-        # ============================================================
+          echo ""
+          echo "========================================"
+          echo "Membuat Service Account JSON..."
+          echo "========================================"
 
-        with open(
-            "/tmp/sa_b64.txt",
-            "r",
-            encoding="utf-8"
-        ) as f:
+          # ======================================================
+          # BASE64 SERVICE ACCOUNT
+          # ======================================================
+          #
+          # Dipakai agar isi secret tetap utuh.
+          #
+          # ======================================================
 
-            b64_str = f.read().strip()
+          printf '%s' "$RAW_GCP_KEY" \
+            | base64 -w 0 \
+            > /tmp/sa_b64.txt
 
-        if not b64_str:
+          python3 <<'PYTHON'
 
-            print(
-                "[!] ERROR: GCP_SA_KEY kosong!"
-            )
+          import base64
+          import json
+          import os
+          import re
+          import sys
 
-            sys.exit(1)
+          # ============================================================
+          # READ SERVICE ACCOUNT SECRET
+          # ============================================================
 
-        # ============================================================
-        # DECODE BASE64
-        # ============================================================
+          with open(
+              "/tmp/sa_b64.txt",
+              "r",
+              encoding="utf-8"
+          ) as f:
 
-        try:
+              b64_str = f.read().strip()
 
-            raw_json_bytes = base64.b64decode(
-                b64_str
-            )
+          if not b64_str:
 
-            raw_json_str = raw_json_bytes.decode(
-                "utf-8"
-            )
+              print(
+                  "[!] ERROR: GCP_SA_KEY kosong!"
+              )
 
-        except Exception as e:
+              sys.exit(1)
 
-            print(
-                f"[!] ERROR decode secret: {e}"
-            )
+          # ============================================================
+          # DECODE BASE64
+          # ============================================================
 
-            sys.exit(1)
+          try:
 
-        # ============================================================
-        # PARSE JSON
-        # ============================================================
+              raw_json_bytes = base64.b64decode(
+                  b64_str
+              )
 
-        try:
+              raw_json_str = raw_json_bytes.decode(
+                  "utf-8"
+              )
 
-            data = json.loads(
-                raw_json_str
-            )
+          except Exception as e:
 
-        except json.JSONDecodeError:
+              print(
+                  f"[!] ERROR decode secret: {e}"
+              )
 
-            # ========================================================
-            # COBA REPAIR PRIVATE KEY
-            # ========================================================
+              sys.exit(1)
 
-            try:
+          # ============================================================
+          # PARSE JSON
+          # ============================================================
 
-                repaired = raw_json_str.replace(
-                    "\\\\n",
-                    "\\n"
-                )
+          try:
 
-                data = json.loads(
-                    repaired
-                )
+              data = json.loads(
+                  raw_json_str
+              )
 
-            except Exception as e:
+          except json.JSONDecodeError:
 
-                print(
-                    "[!] ERROR: GCP_SA_KEY bukan JSON valid!"
-                )
+              # ========================================================
+              # COBA REPAIR PRIVATE KEY
+              # ========================================================
 
-                print(
-                    f"[!] Detail: {e}"
-                )
+              try:
 
-                sys.exit(1)
+                  repaired = raw_json_str.replace(
+                      "\\\\n",
+                      "\\n"
+                  )
 
-        # ============================================================
-        # VALIDATE SERVICE ACCOUNT
-        # ============================================================
+                  data = json.loads(
+                      repaired
+                  )
 
-        required_fields = [
+              except Exception as e:
 
-            "type",
-            "project_id",
-            "private_key",
-            "client_email"
+                  print(
+                      "[!] ERROR: GCP_SA_KEY bukan JSON valid!"
+                  )
 
-        ]
+                  print(
+                      f"[!] Detail: {e}"
+                  )
 
-        for field in required_fields:
+                  sys.exit(1)
 
-            if field not in data:
+          # ============================================================
+          # VALIDATE SERVICE ACCOUNT
+          # ============================================================
 
-                print(
-                    f"[!] ERROR: Field '{field}' "
-                    "tidak ditemukan di GCP_SA_KEY"
-                )
+          required_fields = [
 
-                sys.exit(1)
+              "type",
+              "project_id",
+              "private_key",
+              "client_email"
 
-        # ============================================================
-        # CHECK TYPE
-        # ============================================================
+          ]
 
-        if data.get("type") != "service_account":
+          for field in required_fields:
 
-            print(
-                "[!] ERROR: JSON bukan Service Account!"
-            )
+              if field not in data:
 
-            sys.exit(1)
+                  print(
+                      f"[!] ERROR: Field '{field}' "
+                      "tidak ditemukan di GCP_SA_KEY"
+                  )
 
-        # ============================================================
-        # REPAIR PRIVATE KEY NEWLINE
-        # ============================================================
+                  sys.exit(1)
 
-        if "\\n" in data["private_key"]:
+          # ============================================================
+          # CHECK TYPE
+          # ============================================================
 
-            data["private_key"] = data[
-                "private_key"
-            ].replace(
-                "\\n",
-                "\n"
-            )
+          if data.get("type") != "service_account":
 
-        # ============================================================
-        # SAVE SERVICE ACCOUNT
-        # ============================================================
+              print(
+                  "[!] ERROR: JSON bukan Service Account!"
+              )
 
-        sa_path = (
-            "/home/runner/.config/rclone/sa.json"
-        )
+              sys.exit(1)
 
-        with open(
-            sa_path,
-            "w",
-            encoding="utf-8"
-        ) as f:
+          # ============================================================
+          # REPAIR PRIVATE KEY NEWLINE
+          # ============================================================
 
-            json.dump(
-                data,
-                f,
-                indent=2
-            )
+          if "\\n" in data["private_key"]:
 
-        # ============================================================
-        # DRIVE ROOT FOLDER ID
-        # ============================================================
+              data["private_key"] = data[
+                  "private_key"
+              ].replace(
+                  "\\n",
+                  "\n"
+              )
 
-        raw_id = os.environ.get(
-            "RAW_DRIVE_ID",
-            ""
-        ).strip()
+          # ============================================================
+          # SAVE SERVICE ACCOUNT
+          # ============================================================
 
-        if not raw_id:
+          sa_path = (
+              "/home/runner/.config/rclone/sa.json"
+          )
 
-            print(
-                "[!] ERROR: DRIVE_FILE_ID kosong!"
-            )
+          with open(
+              sa_path,
+              "w",
+              encoding="utf-8"
+          ) as f:
 
-            sys.exit(1)
+              json.dump(
+                  data,
+                  f,
+                  indent=2
+              )
 
-        # ============================================================
-        # SUPPORT DRIVE ID FORMAT
-        # ============================================================
-        #
-        # 1. ID langsung
-        #
-        # 2. https://drive.google.com/drive/folders/XXXXX
-        #
-        # 3. https://drive.google.com/open?id=XXXXX
-        #
-        # ============================================================
+          # ============================================================
+          # DRIVE ROOT FOLDER ID
+          # ============================================================
 
-        if "/folders/" in raw_id:
+          raw_id = os.environ.get(
+              "RAW_DRIVE_ID",
+              ""
+          ).strip()
 
-            clean_id = raw_id.split(
-                "/folders/",
-                1
-            )[1]
+          if not raw_id:
 
-            clean_id = clean_id.split(
-                "?",
-                1
-            )[0]
+              print(
+                  "[!] ERROR: DRIVE_FILE_ID kosong!"
+              )
 
-            clean_id = clean_id.split(
-                "/",
-                1
-            )[0]
+              sys.exit(1)
 
-        elif "id=" in raw_id:
+          # ============================================================
+          # SUPPORT DRIVE ID FORMAT
+          # ============================================================
+          #
+          # 1. ID langsung
+          #
+          # 2. https://drive.google.com/drive/folders/XXXXX
+          #
+          # 3. https://drive.google.com/open?id=XXXXX
+          #
+          # ============================================================
 
-            match = re.search(
-                r"[?&]id=([^&]+)",
-                raw_id
-            )
+          if "/folders/" in raw_id:
 
-            if match:
+              clean_id = raw_id.split(
+                  "/folders/",
+                  1
+              )[1]
 
-                clean_id = match.group(1)
+              clean_id = clean_id.split(
+                  "?",
+                  1
+              )[0]
 
-            else:
+              clean_id = clean_id.split(
+                  "/",
+                  1
+              )[0]
 
-                clean_id = raw_id
+          elif "id=" in raw_id:
 
-        else:
+              match = re.search(
+                  r"[?&]id=([^&]+)",
+                  raw_id
+              )
 
-            clean_id = raw_id
+              if match:
 
-            clean_id = clean_id.split(
-                "?",
-                1
-            )[0]
+                  clean_id = match.group(1)
 
-            clean_id = clean_id.rstrip("/")
+              else:
 
-        clean_id = clean_id.strip()
+                  clean_id = raw_id
 
-        # ============================================================
-        # VALIDATE DRIVE ID
-        # ============================================================
+          else:
 
-        if not clean_id:
+              clean_id = raw_id
 
-            print(
-                "[!] ERROR: Tidak bisa membaca DRIVE_FILE_ID!"
-            )
+              clean_id = clean_id.split(
+                  "?",
+                  1
+              )[0]
 
-            sys.exit(1)
+              clean_id = clean_id.rstrip("/")
 
-        # ============================================================
-        # CREATE RCLONE CONFIG
-        # ============================================================
+          clean_id = clean_id.strip()
 
-        rclone_conf = f"""[gdrive]
-        type = drive
-        scope = drive
-        service_account_file = {sa_path}
-        root_folder_id = {clean_id}
-        """
+          # ============================================================
+          # VALIDATE DRIVE ID
+          # ============================================================
 
-        config_path = (
-            "/home/runner/.config/rclone/rclone.conf"
-        )
+          if not clean_id:
 
-        with open(
-            config_path,
-            "w",
-            encoding="utf-8"
-        ) as f:
+              print(
+                  "[!] ERROR: Tidak bisa membaca DRIVE_FILE_ID!"
+              )
 
-            f.write(
-                rclone_conf
-            )
+              sys.exit(1)
 
-        # ============================================================
-        # INFO
-        # ============================================================
+          # ============================================================
+          # CREATE RCLONE CONFIG
+          # ============================================================
 
-        print(
-            "[+] Service Account OK"
-        )
+          rclone_conf = f"""[gdrive]
+          type = drive
+          scope = drive
+          service_account_file = {sa_path}
+          root_folder_id = {clean_id}
+          """
 
-        print(
-            "[+] sa.json berhasil dibuat"
-        )
+          config_path = (
+              "/home/runner/.config/rclone/rclone.conf"
+          )
 
-        print(
-            "[+] rclone.conf berhasil dibuat"
-        )
+          with open(
+              config_path,
+              "w",
+              encoding="utf-8"
+          ) as f:
 
-        print(
-            f"[+] Project ID : "
-            f"{data.get('project_id')}"
-        )
+              f.write(
+                  rclone_conf
+              )
 
-        print(
-            f"[+] Client Email: "
-            f"{data.get('client_email')}"
-        )
+          # ============================================================
+          # INFO
+          # ============================================================
 
-        print(
-            f"[+] Drive Root ID: "
-            f"{clean_id}"
-        )
+          print(
+              "[+] Service Account OK"
+          )
 
-        PYTHON
+          print(
+              "[+] sa.json berhasil dibuat"
+          )
 
-        # ======================================================
-        # SECURITY
-        # ======================================================
+          print(
+              "[+] rclone.conf berhasil dibuat"
+          )
 
-        chmod 600 \
-          /home/runner/.config/rclone/sa.json
+          print(
+              f"[+] Project ID : "
+              f"{data.get('project_id')}"
+          )
 
-        chmod 600 \
-          /home/runner/.config/rclone/rclone.conf
+          print(
+              f"[+] Client Email: "
+              f"{data.get('client_email')}"
+          )
 
-        # ======================================================
-        # TEST RCLONE
-        # ======================================================
+          print(
+              f"[+] Drive Root ID: "
+              f"{clean_id}"
+          )
 
-        echo ""
-        echo "========================================"
-        echo "TEST RCLONE CONFIG"
-        echo "========================================"
+          PYTHON
 
-        rclone listremotes
+          # ======================================================
+          # SECURITY
+          # ======================================================
 
-        echo ""
-        echo "========================================"
-        echo "TEST GOOGLE DRIVE CONNECTION"
-        echo "========================================"
+          chmod 600 \
+            /home/runner/.config/rclone/sa.json
 
-        rclone lsd \
-          gdrive: \
-          --max-depth 1
+          chmod 600 \
+            /home/runner/.config/rclone/rclone.conf
 
-        echo ""
-        echo "[+] Google Drive connection BERHASIL"
+          # ======================================================
+          # TEST RCLONE
+          # ======================================================
 
-    # ============================================================
-    # MOUNT GOOGLE DRIVE
-    # ============================================================
+          echo ""
+          echo "========================================"
+          echo "TEST RCLONE CONFIG"
+          echo "========================================"
 
-    - name: Mount Folder SF
+          rclone listremotes
 
-      run: |
+          echo ""
+          echo "========================================"
+          echo "TEST GOOGLE DRIVE CONNECTION"
+          echo "========================================"
 
-        set -e
+          rclone lsd \
+            gdrive: \
+            --max-depth 1
 
-        # ======================================================
-        # BUAT MOUNT DIRECTORY
-        # ======================================================
+          echo ""
+          echo "[+] Google Drive connection BERHASIL"
 
-        mkdir -p ./drive_sf
+      # ============================================================
+      # MOUNT GOOGLE DRIVE
+      # ============================================================
 
-        echo ""
-        echo "========================================"
-        echo "Mount Google Drive..."
-        echo "========================================"
+      - name: Mount Folder SF
 
-        # ======================================================
-        # RCLONE MOUNT
-        # ======================================================
+        run: |
 
-        rclone mount \
-          gdrive: \
-          ./drive_sf \
-          --vfs-cache-mode writes \
-          --vfs-cache-max-size 2G \
-          --dir-cache-time 5m \
-          --poll-interval 30s \
-          --daemon
+          set -e
 
-        sleep 5
+          # ======================================================
+          # BUAT MOUNT DIRECTORY
+          # ======================================================
 
-        # ======================================================
-        # CHECK MOUNT
-        # ======================================================
+          mkdir -p ./drive_sf
 
-        echo ""
-        echo "========================================"
-        echo "CHECK MOUNT"
-        echo "========================================"
+          echo ""
+          echo "========================================"
+          echo "Mount Google Drive..."
+          echo "========================================"
 
-        if mountpoint -q ./drive_sf; then
+          # ======================================================
+          # RCLONE MOUNT
+          # ======================================================
 
-          echo "[+] Google Drive berhasil di-mount"
+          rclone mount \
+            gdrive: \
+            ./drive_sf \
+            --vfs-cache-mode writes \
+            --vfs-cache-max-size 2G \
+            --dir-cache-time 5m \
+            --poll-interval 30s \
+            --daemon
 
-        else
+          sleep 5
 
-          echo "[!] ERROR: Google Drive gagal di-mount!"
+          # ======================================================
+          # CHECK MOUNT
+          # ======================================================
 
-          exit 1
+          echo ""
+          echo "========================================"
+          echo "CHECK MOUNT"
+          echo "========================================"
 
-        fi
+          if mountpoint -q ./drive_sf; then
 
-        # ======================================================
-        # LIST FOLDER
-        # ======================================================
+            echo "[+] Google Drive berhasil di-mount"
 
-        echo ""
-        echo "Isi folder:"
+          else
 
-        ls -lah ./drive_sf
+            echo "[!] ERROR: Google Drive gagal di-mount!"
 
-    # ============================================================
-    # RUN BOTS
-    # ============================================================
+            exit 1
 
-    - name: Run All Subfolder Bots In Parallel
+          fi
 
-      run: |
+          # ======================================================
+          # LIST FOLDER
+          # ======================================================
 
-        python3 <<'PYTHON'
+          echo ""
+          echo "Isi folder:"
 
-        import os
-        import signal
-        import subprocess
-        import sys
-        import time
+          ls -lah ./drive_sf
 
-        # ============================================================
-        # CONFIG
-        # ============================================================
+      # ============================================================
+      # RUN BOTS
+      # ============================================================
 
-        target = "${{ matrix.target }}"
+      - name: Run All Subfolder Bots In Parallel
 
-        target_dir = os.path.join(
-            "./drive_sf",
-            target
-        )
+        run: |
 
-        # ============================================================
-        # HEADER
-        # ============================================================
+          python3 <<'PYTHON'
 
-        print(
-            "=" * 60
-        )
+          import os
+          import signal
+          import subprocess
+          import sys
+          import time
 
-        print(
-            f"TARGET MATRIX : {target}"
-        )
+          # ============================================================
+          # CONFIG
+          # ============================================================
 
-        print(
-            f"TARGET FOLDER : {target_dir}"
-        )
+          target = "${{ matrix.target }}"
 
-        print(
-            "=" * 60
-        )
+          target_dir = os.path.join(
+              "./drive_sf",
+              target
+          )
 
-        # ============================================================
-        # PROCESS LIST
-        # ============================================================
+          # ============================================================
+          # HEADER
+          # ============================================================
 
-        processes = []
+          print(
+              "=" * 60
+          )
 
-        # ============================================================
-        # RUN BOT LOOP
-        # ============================================================
+          print(
+              f"TARGET MATRIX : {target}"
+          )
 
-        def run_bot_loop(bot_dir):
+          print(
+              f"TARGET FOLDER : {target_dir}"
+          )
 
-            cmd = (
-                "while true; do "
-                "python3 sm.py; "
-                "EXIT_CODE=$?; "
-                f'echo "[!] Bot di {bot_dir} berhenti dengan code $EXIT_CODE"; '
-                'echo "[!] Restart dalam 5 detik..."; '
-                "sleep 5; "
-                "done"
-            )
+          print(
+              "=" * 60
+          )
 
-            process = subprocess.Popen(
+          # ============================================================
+          # PROCESS LIST
+          # ============================================================
 
-                cmd,
+          processes = []
 
-                shell=True,
+          # ============================================================
+          # RUN BOT LOOP
+          # ============================================================
 
-                cwd=bot_dir,
+          def run_bot_loop(bot_dir):
 
-                executable="/bin/bash",
+              cmd = (
+                  "while true; do "
+                  "python3 sm.py; "
+                  "EXIT_CODE=$?; "
+                  f'echo "[!] Bot di {bot_dir} berhenti dengan code $EXIT_CODE"; '
+                  'echo "[!] Restart dalam 5 detik..."; '
+                  "sleep 5; "
+                  "done"
+              )
 
-                # ====================================================
-                # BUAT PROCESS GROUP SENDIRI
-                # ====================================================
+              process = subprocess.Popen(
 
-                start_new_session=True
+                  cmd,
 
-            )
+                  shell=True,
 
-            return process
+                  cwd=bot_dir,
 
-        # ============================================================
-        # CHECK TARGET DIRECTORY
-        # ============================================================
+                  executable="/bin/bash",
 
-        if not os.path.exists(target_dir):
+                  # ====================================================
+                  # BUAT PROCESS GROUP SENDIRI
+                  # ====================================================
 
-            print(
-                f"[!] ERROR: Folder {target_dir} "
-                "tidak ditemukan di Google Drive!"
-            )
+                  start_new_session=True
 
-            sys.exit(1)
+              )
 
-        # ============================================================
-        # SEARCH sm.py
-        # ============================================================
+              return process
 
-        for root, dirs, files in os.walk(
-            target_dir
-        ):
+          # ============================================================
+          # CHECK TARGET DIRECTORY
+          # ============================================================
 
-            if "sm.py" in files:
+          if not os.path.exists(target_dir):
 
-                print(
-                    f"==> Menjalankan Bot Real-time di: {root}"
-                )
+              print(
+                  f"[!] ERROR: Folder {target_dir} "
+                  "tidak ditemukan di Google Drive!"
+              )
 
-                process = run_bot_loop(
-                    root
-                )
+              sys.exit(1)
 
-                processes.append(
-                    process
-                )
+          # ============================================================
+          # SEARCH sm.py
+          # ============================================================
 
-        # ============================================================
-        # CHECK BOT
-        # ============================================================
+          for root, dirs, files in os.walk(
+              target_dir
+          ):
 
-        if not processes:
+              if "sm.py" in files:
 
-            print(
-                f"[!] ERROR: Tidak ditemukan sm.py "
-                f"di dalam {target_dir}"
-            )
+                  print(
+                      f"==> Menjalankan Bot Real-time di: {root}"
+                  )
 
-            sys.exit(1)
+                  process = run_bot_loop(
+                      root
+                  )
 
-        # ============================================================
-        # INFO
-        # ============================================================
+                  processes.append(
+                      process
+                  )
 
-        print("")
+          # ============================================================
+          # CHECK BOT
+          # ============================================================
 
-        print(
-            f"[+] Total bot berjalan: "
-            f"{len(processes)}"
-        )
+          if not processes:
 
-        print("")
+              print(
+                  f"[!] ERROR: Tidak ditemukan sm.py "
+                  f"di dalam {target_dir}"
+              )
 
-        # ============================================================
-        # WAIT
-        # ============================================================
+              sys.exit(1)
 
-        try:
-            while True:
-                alive_count = 0
+          # ============================================================
+          # INFO
+          # ============================================================
 
-                for process in processes:
-                    if process.poll() is None:
-                        alive_count += 1
+          print("")
 
-                if alive_count == 0:
-                    print("[!] Semua bot process berhenti!")
-                    break
+          print(
+              f"[+] Total bot berjalan: "
+              f"{len(processes)}"
+          )
 
-                time.sleep(60)
+          print("")
 
-        except KeyboardInterrupt:
-            print("[!] Workflow dihentikan.")
+          # ============================================================
+          # WAIT
+          # ============================================================
 
-        # ============================================================
-        # STOP ALL BOT PROCESS GROUPS
-        # ============================================================
+          try:
+              while True:
+                  alive_count = 0
 
-        print("")
+                  for process in processes:
+                      if process.poll() is None:
+                          alive_count += 1
 
-        print(
-            "=" * 60
-        )
+                  if alive_count == 0:
+                      print("[!] Semua bot process berhenti!")
+                      break
 
-        print(
-            "[+] Waktu bot selesai."
-        )
+                  time.sleep(60)
 
-        print(
-            "[+] Menghentikan semua bot..."
-        )
+          except KeyboardInterrupt:
+              print("[!] Workflow dihentikan.")
 
-        print(
-            "=" * 60
-        )
+          # ============================================================
+          # STOP ALL BOT PROCESS GROUPS
+          # ============================================================
 
-        for process in processes:
+          print("")
 
-            try:
+          print(
+              "=" * 60
+          )
 
-                if process.poll() is None:
+          print(
+              "[+] Waktu bot selesai."
+          )
 
-                    # =================================================
-                    # STOP SELURUH PROCESS GROUP
-                    # =================================================
+          print(
+              "[+] Menghentikan semua bot..."
+          )
 
-                    os.killpg(
-                        os.getpgid(process.pid),
-                        signal.SIGTERM
-                    )
+          print(
+              "=" * 60
+          )
 
-            except Exception as e:
+          for process in processes:
 
-                print(
-                    f"[!] Gagal TERM process "
-                    f"{process.pid}: {e}"
-                )
+              try:
 
-        # ============================================================
-        # WAIT
-        # ============================================================
+                  if process.poll() is None:
 
-        time.sleep(5)
+                      # =================================================
+                      # STOP SELURUH PROCESS GROUP
+                      # =================================================
 
-        # ============================================================
-        # FORCE KILL
-        # ============================================================
+                      os.killpg(
+                          os.getpgid(process.pid),
+                          signal.SIGTERM
+                      )
 
-        for process in processes:
+              except Exception as e:
 
-            try:
+                  print(
+                      f"[!] Gagal TERM process "
+                      f"{process.pid}: {e}"
+                  )
 
-                if process.poll() is None:
+          # ============================================================
+          # WAIT
+          # ============================================================
 
-                    print(
-                        f"[!] Process {process.pid} "
-                        "masih hidup."
-                    )
+          time.sleep(5)
 
-                    print(
-                        "[!] Force kill process group..."
-                    )
+          # ============================================================
+          # FORCE KILL
+          # ============================================================
 
-                    os.killpg(
-                        os.getpgid(process.pid),
-                        signal.SIGKILL
-                    )
+          for process in processes:
 
-            except Exception as e:
+              try:
 
-                print(
-                    f"[!] Gagal KILL process "
-                    f"{process.pid}: {e}"
-                )
+                  if process.poll() is None:
 
-        print("")
+                      print(
+                          f"[!] Process {process.pid} "
+                          "masih hidup."
+                      )
 
-        print(
-            "[+] Semua bot sudah dihentikan."
-        )
+                      print(
+                          "[!] Force kill process group..."
+                      )
 
-        print("")
+                      os.killpg(
+                          os.getpgid(process.pid),
+                          signal.SIGKILL
+                      )
 
-        PYTHON
+              except Exception as e:
 
-    # ============================================================
+                  print(
+                      f"[!] Gagal KILL process "
+                      f"{process.pid}: {e}"
+                  )
+
+          print("")
+
+          print(
+              "[+] Semua bot sudah dihentikan."
+          )
+
+          print("")
+
+          PYTHON
+
+      # ============================================================
