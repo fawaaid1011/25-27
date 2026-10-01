@@ -1,5 +1,3 @@
-tolong jelaskan kode ini :
-
 name: "um2"
 
 on:
@@ -42,6 +40,7 @@ jobs:
           - '1b'
           - 'LDP'
           - 'LDP2'
+
 
     steps:
 
@@ -649,19 +648,11 @@ jobs:
 
 
     # ============================================================
+    # ============================================================
     # RUN BOTS
     # ============================================================
-    #
-    # BOT BERJALAN 320 MENIT.
-    #
-    # Kenapa bukan 330?
-    #
-    # Karena timeout job = 330 menit.
-    #
-    Bot berjalan maksimal 320 menit.
-    Setelah selesai, workflow berhenti.
-    Untuk menjalankan lagi, klik Run workflow secara manual.
-
+    # Bot berjalan maksimal 320 menit.
+    # Untuk menjalankan kembali, klik Run workflow secara manual.
 
     - name: Run All Subfolder Bots In Parallel
 
@@ -1030,3 +1021,6 @@ jobs:
 
 
         PYTHON
+
+
+    # ============================================================
