@@ -14,6 +14,7 @@ jobs:
     strategy:
 
       fail-fast: false
+      max-parallel: 1  # <--- DITAMBAHKAN AGAR JALAN ANTRE / BERURUTAN
 
       matrix:
 
@@ -156,10 +157,6 @@ jobs:
           # ======================================================
           # BASE64 SERVICE ACCOUNT
           # ======================================================
-          #
-          # Dipakai agar isi secret tetap utuh.
-          #
-          # ======================================================
 
           printf '%s' "$RAW_GCP_KEY" \
             | base64 -w 0 \
@@ -226,10 +223,6 @@ jobs:
               )
 
           except json.JSONDecodeError:
-
-              # ========================================================
-              # COBA REPAIR PRIVATE KEY
-              # ========================================================
 
               try:
 
@@ -343,14 +336,6 @@ jobs:
           # ============================================================
           # SUPPORT DRIVE ID FORMAT
           # ============================================================
-          #
-          # 1. ID langsung
-          #
-          # 2. https://drive.google.com/drive/folders/XXXXX
-          #
-          # 3. https://drive.google.com/open?id=XXXXX
-          #
-          # ============================================================
 
           if "/folders/" in raw_id:
 
@@ -414,11 +399,11 @@ jobs:
           # ============================================================
 
           rclone_conf = f"""[gdrive]
-          type = drive
-          scope = drive
-          service_account_file = {sa_path}
-          root_folder_id = {clean_id}
-          """
+type = drive
+scope = drive
+service_account_file = {sa_path}
+root_folder_id = {clean_id}
+"""
 
           config_path = (
               "/home/runner/.config/rclone/rclone.conf"
@@ -827,5 +812,3 @@ jobs:
           print("")
 
           PYTHON
-
-      # ============================================================
