@@ -49,8 +49,9 @@ jobs:
       matrix:
 
         target:
-          - 'LDP'
-          - 'LDP2'
+          - '1'
+          - '1b'
+          - '4'
 
     steps:
 
