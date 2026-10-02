@@ -4,6 +4,34 @@ on:
   workflow_dispatch:
 
 # ============================================================
+# ANTRIAN WORKFLOW
+# ============================================================
+# Hanya 1 workflow dari group ini yang boleh berjalan.
+#
+# Workflow berikutnya akan masuk antrean.
+#
+# Contoh:
+# RUN 1 = RUNNING
+# RUN 2 = PENDING
+# RUN 3 = PENDING
+#
+# Setelah RUN 1 selesai:
+# RUN 2 = RUNNING
+# RUN 3 = PENDING
+#
+# Setelah RUN 2 selesai:
+# RUN 3 = RUNNING
+# ============================================================
+
+concurrency:
+  group: um2-workflow-queue
+  cancel-in-progress: false
+  queue: max
+
+# ============================================================
+# JOBS
+# ============================================================
+
 jobs:
 
   run:
@@ -11,16 +39,19 @@ jobs:
     runs-on: ubuntu-latest
 
     # ========================================================
+    # MATRIX TARGET
+    # ========================================================
+
     strategy:
 
       fail-fast: false
-      max-parallel: 1  # <--- DITAMBAHKAN AGAR JALAN ANTRE / BERURUTAN
 
       matrix:
 
         target:
           - 'LDP'
           - 'LDP2'
+
     steps:
 
       # ============================================================
@@ -40,7 +71,6 @@ jobs:
         uses: actions/setup-python@v5
 
         with:
-
           python-version: '3.10'
 
       # ============================================================
@@ -399,11 +429,11 @@ jobs:
           # ============================================================
 
           rclone_conf = f"""[gdrive]
-type = drive
-scope = drive
-service_account_file = {sa_path}
-root_folder_id = {clean_id}
-"""
+          type = drive
+          scope = drive
+          service_account_file = {sa_path}
+          root_folder_id = {clean_id}
+          """
 
           config_path = (
               "/home/runner/.config/rclone/rclone.conf"
@@ -630,10 +660,6 @@ root_folder_id = {clean_id}
 
                   executable="/bin/bash",
 
-                  # ====================================================
-                  # BUAT PROCESS GROUP SENDIRI
-                  # ====================================================
-
                   start_new_session=True
 
               )
@@ -701,26 +727,48 @@ root_folder_id = {clean_id}
 
           print("")
 
+          print(
+              "[+] Workflow sedang berjalan."
+          )
+
+          print(
+              "[+] Workflow berikutnya akan tetap "
+              "menunggu di antrean."
+          )
+
+          print("")
+
           # ============================================================
           # WAIT
           # ============================================================
 
           try:
+
               while True:
+
                   alive_count = 0
 
                   for process in processes:
+
                       if process.poll() is None:
+
                           alive_count += 1
 
                   if alive_count == 0:
-                      print("[!] Semua bot process berhenti!")
+
+                      print(
+                          "[!] Semua bot process berhenti!"
+                      )
+
                       break
 
                   time.sleep(60)
 
           except KeyboardInterrupt:
-              print("[!] Workflow dihentikan.")
+
+              print(
+                  "[!] Workflow dihentikan."
+              )
 
           # ============================================================
           # STOP ALL BOT PROCESS GROUPS
@@ -767,7 +815,7 @@ root_folder_id = {clean_id}
                   )
 
           # ============================================================
-          # WAIT
+          # WAIT 5 DETIK
           # ============================================================
 
           time.sleep(5)
