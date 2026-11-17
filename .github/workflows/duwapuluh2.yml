@@ -310,24 +310,24 @@ jobs:
           EXIT_CODE=$?
           echo "Python exit code: $EXIT_CODE"
 
-          # Jika exit code 124 (artinya timeout 340m tercapai), anggap sukses (exit 0) agar workflow hijau
           if [ $EXIT_CODE -eq 124 ]; then
-            echo "[+] Batas waktu 5 jam 40 menit selesai dengan sukses. Workflow ditutup dengan status Success (Hijau)."
+            echo "[+] Batas waktu 5 jam 40 menit selesai dengan sukses."
             exit 0
           else
             exit $EXIT_CODE
           fi
 
       # ============================================================
-      # FORCE SYNC NEW FILES TO GOOGLE DRIVE BEFORE EXIT
+      # UNMOUNT & FLUSH CACHE CLEANLY (MENINGGALKAN COPY CONFLICT)
       # ============================================================
 
-      - name: Sync New Files To Google Drive
+      - name: Unmount And Flush Cache Cleanly
 
         if: always()
 
         run: |
 
-          echo "[+] Memaksa Rclone meng-upload file session.json & zip baru ke Google Drive..."
-          rclone copy ./drive_sf gdrive: --update --transfers 4 --checkers 8 || true
-          echo "[+] Penulisan & Penyimpanan ke Google Drive SELESAI PERMANEN."
+          echo "[+] Meng-unmount Google Drive agar Rclone mem-flush cache terakhir secara bersih..."
+          fusermount -u ./drive_sf || umount ./drive_sf || true
+          sleep 5
+          echo "[+] Penyimpanan ke Google Drive SELESAI PERMANEN."
