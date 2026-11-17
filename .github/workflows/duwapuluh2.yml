@@ -242,6 +242,10 @@ jobs:
                   "python3 sm.py; "
                   "EXIT_CODE=$?; "
                   f'echo "[!] Bot di {bot_dir} berhenti dengan code $EXIT_CODE"; '
+                  'if [ "$EXIT_CODE" -eq 2 ]; then '
+                  'echo "[STOP] Session/login tidak valid. Tidak restart agar tidak login ulang."; '
+                  'exit 2; '
+                  'fi; '
                   'echo "[!] Restart dalam 5 detik..."; '
                   "sleep 5; "
                   "done"
@@ -261,6 +265,12 @@ jobs:
 
           for root, dirs, files in os.walk(target_dir):
               if "sm.py" in files:
+                  has_session = os.path.isfile(os.path.join(root, "session.json"))
+                  has_zip = os.path.isfile(os.path.join(root, "proxy_auth_plugin.zip"))
+                  print("-" * 60)
+                  print(f"AKUN: {root}")
+                  print(f"session.json          : {'ADA' if has_session else 'BELUM ADA - dibuat setelah login pertama'}")
+                  print(f"proxy_auth_plugin.zip : {'ADA' if has_zip else 'BELUM ADA - dibuat setelah login jika proxy memakai autentikasi'}")
                   print(f"==> Menjalankan Bot Real-time di: {root}")
                   process = run_bot_loop(root)
                   processes.append(process)
