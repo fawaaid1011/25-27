@@ -213,6 +213,10 @@ jobs:
 
           set +e
 
+          # Semua file penting diunggah langsung ke remote Rclone dan diverifikasi.
+          export RCLONE_REMOTE="gdrive:"
+          export RCLONE_MOUNT_ROOT="$GITHUB_WORKSPACE/drive_sf"
+
           # Jalankan timeout 340 menit (5 jam 40 menit). Exit code 124 menandakan timeout tercapai.
           timeout 340m python3 <<'PYTHON'
           import os
@@ -337,7 +341,13 @@ jobs:
 
         run: |
 
-          echo "[+] Meng-unmount Google Drive agar Rclone mem-flush cache terakhir secara bersih..."
-          fusermount -u ./drive_sf || umount ./drive_sf || true
-          sleep 5
-          echo "[+] Penyimpanan ke Google Drive SELESAI PERMANEN."
+          echo "[+] Meng-unmount Google Drive..."
+          if mountpoint -q ./drive_sf; then
+            fusermount -u ./drive_sf || umount ./drive_sf
+          fi
+          sleep 3
+          if mountpoint -q ./drive_sf; then
+            echo "[!] ERROR: Google Drive masih ter-mount; flush akhir belum dapat dipastikan."
+            exit 1
+          fi
+          echo "[+] Google Drive berhasil di-unmount. File session/ZIP sebelumnya sudah di-upload dan diverifikasi langsung dengan rclone copyto + lsjson."
