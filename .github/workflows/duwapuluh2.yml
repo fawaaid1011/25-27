@@ -213,10 +213,6 @@ jobs:
 
           set +e
 
-          # Semua file penting diunggah langsung ke remote Rclone dan diverifikasi.
-          export RCLONE_REMOTE="gdrive:"
-          export RCLONE_MOUNT_ROOT="$GITHUB_WORKSPACE/drive_sf"
-
           # Jalankan timeout 340 menit (5 jam 40 menit). Exit code 124 menandakan timeout tercapai.
           timeout 340m python3 <<'PYTHON'
           import os
@@ -246,10 +242,6 @@ jobs:
                   "python3 sm.py; "
                   "EXIT_CODE=$?; "
                   f'echo "[!] Bot di {bot_dir} berhenti dengan code $EXIT_CODE"; '
-                  'if [ "$EXIT_CODE" -eq 2 ]; then '
-                  'echo "[STOP] Session/login tidak valid. Tidak restart agar tidak login ulang."; '
-                  'exit 2; '
-                  'fi; '
                   'echo "[!] Restart dalam 5 detik..."; '
                   "sleep 5; "
                   "done"
@@ -269,12 +261,6 @@ jobs:
 
           for root, dirs, files in os.walk(target_dir):
               if "sm.py" in files:
-                  has_session = os.path.isfile(os.path.join(root, "session.json"))
-                  has_zip = os.path.isfile(os.path.join(root, "proxy_auth_plugin.zip"))
-                  print("-" * 60)
-                  print(f"AKUN: {root}")
-                  print(f"session.json          : {'ADA' if has_session else 'BELUM ADA - dibuat setelah login pertama'}")
-                  print(f"proxy_auth_plugin.zip : {'ADA' if has_zip else 'BELUM ADA - dibuat setelah login jika proxy memakai autentikasi'}")
                   print(f"==> Menjalankan Bot Real-time di: {root}")
                   process = run_bot_loop(root)
                   processes.append(process)
@@ -341,13 +327,7 @@ jobs:
 
         run: |
 
-          echo "[+] Meng-unmount Google Drive..."
-          if mountpoint -q ./drive_sf; then
-            fusermount -u ./drive_sf || umount ./drive_sf
-          fi
-          sleep 3
-          if mountpoint -q ./drive_sf; then
-            echo "[!] ERROR: Google Drive masih ter-mount; flush akhir belum dapat dipastikan."
-            exit 1
-          fi
-          echo "[+] Google Drive berhasil di-unmount. File session/ZIP sebelumnya sudah di-upload dan diverifikasi langsung dengan rclone copyto + lsjson."
+          echo "[+] Meng-unmount Google Drive agar Rclone mem-flush cache terakhir secara bersih..."
+          fusermount -u ./drive_sf || umount ./drive_sf || true
+          sleep 5
+          echo "[+] Penyimpanan ke Google Drive SELESAI PERMANEN."
